@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html class="" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Login - HITAM EMS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#286f29",
+                        "primary-hover": "#225c23",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#141e14",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        :root {
+            --hitam-green: #286f29;
+            --hitam-green-soft: #f0fdf4;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at center, #f0fdf4 0%, #ffffff 100%);
+            min-height: 100vh;
+            transition: background 0.3s ease;
+        }
+        .dark body {
+            background: radial-gradient(circle at center, #064e3b 0%, #141e14 100%);
+        }
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(40, 111, 41, 0.08);
+        }
+        .dark .glass-nav {
+            background: rgba(20, 30, 20, 0.8);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .login-card {
+            background: white;
+            box-shadow: 0 25px 50px -12px rgba(40, 111, 41, 0.12);
+            border: 1px solid rgba(40, 111, 41, 0.05);
+        }
+        .dark .login-card {
+            background: rgba(30, 45, 30, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .input-field {
+            @apply block w-full px-5 py-3 rounded-xl border-slate-200 focus:ring-4 focus:ring-primary/10 focus:border-primary/30 transition-all placeholder:text-slate-400 text-slate-900;
+        }
+        .dark .input-field {
+            @apply bg-white/5 border-white/10 text-white placeholder:text-slate-500;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .dark .toggle-sun { display: inline-block; }
+        .dark .toggle-moon { display: none; }
+        .toggle-sun { display: none; }
+        .toggle-moon { display: inline-block; }
+    </style>
+</head>
+<body class="antialiased font-display selection:bg-primary selection:text-white flex flex-col bg-background-light dark:bg-background-dark">
+<nav class="glass-nav sticky top-0 z-50">
+<div class="max-w-7xl mx-auto px-6 lg:px-8">
+<div class="flex items-center justify-between h-20">
+<div class="flex-shrink-0 flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/25">
+<span class="material-symbols-outlined text-white">school</span>
+</div>
+<span class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">HITAM <span class="text-primary font-light">EMS</span></span>
+</div>
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-full text-slate-500 dark:text-slate-400 hover:bg-primary/5 dark:hover:bg-white/5 hover:text-primary transition-all" onclick="document.documentElement.classList.toggle('dark')" title="Toggle Dark Mode">
+<span class="material-symbols-outlined text-[22px] toggle-moon">dark_mode</span>
+<span class="material-symbols-outlined text-[22px] toggle-sun">light_mode</span>
+</button>
+<a class="hidden sm:block text-slate-600 dark:text-slate-300 hover:text-primary font-medium transition-colors" href="#">Support</a>
+</div>
+</div>
+</div>
+</nav>
+<main class="flex-grow flex items-center justify-center px-6 py-12">
+<div class="w-full max-w-lg">
+<div class="text-center mb-10">
+<h1 class="text-3xl font-extrabold text-slate-900 dark:text-white mb-3">Welcome Back</h1>
+<p class="text-slate-500 dark:text-slate-400">Log in to access your HITAM EMS dashboard</p>
+</div>
+<div class="login-card p-8 sm:p-10 rounded-[2rem]">
+<form class="space-y-6">
+<div>
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5 ml-1">HITAM Email ID</label>
+<div class="relative">
+<input class="input-field" placeholder="e.g. 21x41a0501@hitam.org" required="" type="email"/>
+</div>
+</div>
+<div>
+<div class="flex items-center justify-between mb-1.5 ml-1">
+<label class="block text-sm font-semibold text-slate-700 dark:text-slate-200">Password</label>
+<a class="text-xs font-medium text-primary hover:underline underline-offset-4" href="#">Forgot password?</a>
+</div>
+<div class="relative">
+<input class="input-field" placeholder="••••••••" required="" type="password"/>
+</div>
+</div>
+<button class="w-full bg-primary hover:bg-primary-hover text-white py-4 rounded-xl font-bold text-lg transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 group mt-8" type="submit">
+                    Login
+                    <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+</form>
+<div class="mt-8 pt-8 border-t border-slate-100 dark:border-white/10 text-center">
+<p class="text-slate-500 dark:text-slate-400">
+                    New here? 
+                    <a class="text-primary font-bold hover:underline underline-offset-4 ml-1" href="#">Create Account</a>
+</p>
+</div>
+</div>
+<div class="mt-12 flex items-center justify-center gap-6 text-slate-400 dark:text-slate-500 text-xs font-medium uppercase tracking-widest">
+<a class="hover:text-primary transition-colors" href="#">Privacy</a>
+<span class="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+<a class="hover:text-primary transition-colors" href="#">Terms</a>
+<span class="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+<a class="hover:text-primary transition-colors" href="#">Support</a>
+</div>
+</div>
+</main>
+<footer class="py-8 text-center">
+<p class="text-slate-400 dark:text-slate-500 text-xs">© 2026 Hyderabad Institute of Technology and Management</p>
+</footer>
+
+</body></html>
