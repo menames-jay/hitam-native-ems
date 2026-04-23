@@ -44,11 +44,14 @@ export function RegisterButton({ eventId, studentId, isPaid, price, eventTitle }
           const verifyRes = await verifyPaymentAction(
             res.registrationId!,
             response.razorpay_payment_id,
-            response.razorpay_order_id
+            response.razorpay_order_id,
+            response.razorpay_signature
           );
           if (verifyRes.success) {
             alert("Payment successful! You are registered.");
             window.location.reload();
+          } else {
+            alert("Payment Verification Failed: " + verifyRes.error);
           }
         },
         prefill: {
@@ -56,7 +59,7 @@ export function RegisterButton({ eventId, studentId, isPaid, price, eventTitle }
           email: "student@hitam.org",
         },
         theme: {
-          color: "#2E7D32",
+          color: "#059669",
         },
       };
 
@@ -76,10 +79,10 @@ export function RegisterButton({ eventId, studentId, isPaid, price, eventTitle }
       <button 
         onClick={handleRegister}
         disabled={isLoading}
-        className="w-full bg-primary hover:bg-[#225c23] text-white py-5 rounded-2xl font-black text-lg transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-3 group disabled:opacity-50"
+        className="w-full bg-white text-emerald-600 hover:scale-[1.02] active:scale-95 py-5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg flex items-center justify-center gap-3 disabled:opacity-50"
       >
         {isLoading ? "Processing..." : "Register Now"}
-        <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+        <span className="material-symbols-outlined text-sm">arrow_forward</span>
       </button>
     </>
   );

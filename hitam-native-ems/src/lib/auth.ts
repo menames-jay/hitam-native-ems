@@ -15,15 +15,13 @@ export const auth = betterAuth({
       verification: schema.verification
     }
   }),
+  baseURL: process.env.NEXT_PUBLIC_APP_URL,
   emailAndPassword: {
     enabled: true,
     autoSignIn: false,
     sendResetPassword: async ({ user, url }) => {
-      // Log the reset URL to terminal instead of emailing for now
-      console.log(`\n\n=== PASSWORD RESET REQUEST ===`);
-      console.log(`User: ${user.email}`);
-      console.log(`Reset Link: ${url}`);
-      console.log(`==============================\n\n`);
+      const { sendPasswordResetEmail } = await import("@/lib/services/email-service");
+      await sendPasswordResetEmail(user.email, url);
     },
   },
   databaseHooks: {
@@ -36,19 +34,11 @@ export const auth = betterAuth({
           const email = user.email.toLowerCase();
           const isStudent = /^\d{2}/.test(email);
           
-          if (!isStudent) {
-            return {
-              data: {
-                ...user,
-                role: "FACULTY"
-              }
-            };
-          }
-          // Explicitly set STUDENT for digits to be safe
           return {
             data: {
               ...user,
-              role: "STUDENT"
+              emailVerified: true, // Automatically verify institutional emails
+              role: isStudent ? "STUDENT" : "FACULTY"
             }
           };
         }
@@ -61,15 +51,15 @@ export const auth = betterAuth({
       created: async ({ user }: { user: any }) => {
         const email = user.email.toLowerCase();
         const isStudent = /^\d{2}/.test(email);
+        const expectedRole = isStudent ? "STUDENT" : "FACULTY";
         
-        // Final fallback to ensure role is in DB
-        if (!isStudent && user.role !== "FACULTY") {
+        // Final fallback to ensure role and verification are correct in DB
+        if (user.role !== expectedRole || !user.emailVerified) {
           await db.update(schema.user)
-            .set({ role: "FACULTY" })
-            .where(eq(schema.user.id, user.id));
-        } else if (isStudent && user.role !== "STUDENT") {
-          await db.update(schema.user)
-            .set({ role: "STUDENT" })
+            .set({ 
+              role: expectedRole,
+              emailVerified: true 
+            })
             .where(eq(schema.user.id, user.id));
         }
       }

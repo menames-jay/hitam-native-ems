@@ -1,16 +1,24 @@
+import { getServerSession } from "@/lib/auth/role";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { events, eventSessions } from "@/lib/db/schema";
+import * as schema from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { AttendanceControl } from "@/components/events/AttendanceControl";
+import { DownloadReportButton } from "@/components/attendance/download-report";
 import { cn } from "@/lib/utils";
 
 export default async function Page({ searchParams }: { searchParams: Promise<{ session?: string, title?: string }> }) {
   const { session, title } = await searchParams;
-  // TODO: Get real userId from session
-  const mockUserId = "user_mock_123";
+  const authSession = await getServerSession();
+  
+  if (!authSession) {
+    redirect("/login");
+  }
+
+  const userId = authSession.user.id;
 
   const userEvents = await db.query.events.findMany({
-    where: eq(events.createdBy, mockUserId),
+    where: eq(schema.events.createdBy, userId),
     with: {
       sessions: {
         with: {
@@ -18,15 +26,15 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ s
         }
       }
     },
-    orderBy: [desc(events.createdAt)]
+    orderBy: [desc(schema.events.createdAt)]
   });
 
-  if (searchParams.session) {
+  if (session) {
     return (
       <div className="space-y-10 animate-in fade-in zoom-in duration-500">
         <AttendanceControl 
-          sessionId={searchParams.session}
-          eventTitle={searchParams.title || "Institutional Event"}
+          sessionId={session}
+          eventTitle={title || "Institutional Event"}
         />
       </div>
     );
@@ -49,17 +57,19 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ s
                   <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">{event.title}</h3>
                   <p className="text-sm font-medium text-slate-500 uppercase tracking-widest">{event.status}</p>
                </div>
-               <div className="flex gap-4">
-                  {event.sessions.map((session) => (
-                    <a 
-                      key={session.id}
-                      href={`?session=${session.id}&title=${encodeURIComponent(event.title)}`}
-                      className="px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-black rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all"
-                    >
-                      Start Attendance QR
-                    </a>
-                  ))}
-               </div>
+                <div className="flex flex-wrap gap-4">
+                   {event.sessions.map((session) => (
+                     <div key={session.id} className="flex gap-2">
+                       <a 
+                         href={`?session=${session.id}&title=${encodeURIComponent(event.title)}`}
+                         className="px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-black rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all"
+                       >
+                         Start Attendance QR
+                       </a>
+                       <DownloadReportButton sessionId={session.id} />
+                     </div>
+                   ))}
+                </div>
             </div>
           </div>
         ))}

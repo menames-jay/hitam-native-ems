@@ -98,7 +98,7 @@
 }
 
 :root[data-role="FACULTY"] {
-  --primary: #1978e5;
+  --primary: #1e88e5;
   /* Faculty Blue */
 }
 
@@ -180,13 +180,15 @@
   .glass {
     @apply bg-white/60 dark:bg-black/40 backdrop-blur-md border border-white/40 dark:border-white/10;
   }
+
   .nav-floating {
-    @apply fixed bottom-8 left-1/2 -translate-x-1/2 w-[95%] max-w-2xl h-20 rounded-full bg-white/60 dark:bg-black/40 backdrop-blur-md border border-primary/10 shadow-2xl z-40 px-6 flex items-center justify-between transition-transform duration-300;
-    box-shadow: 0 20px 50px -10px rgba(var(--primary), 0.2);
+    @apply fixed bottom-8 left-1/2 -translate-x-1/2 w-[95%] max-w-2xl h-20 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-primary/20 shadow-2xl z-40 px-6 flex items-center justify-between transition-all duration-300;
   }
+
   .welcome-gradient {
     @apply bg-gradient-to-br from-primary to-primary/80;
   }
+
   .dark .welcome-gradient {
     @apply bg-gradient-to-br from-primary/60 to-primary;
   }

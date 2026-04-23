@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db";
 import * as schema from "@/lib/db/schema";
-import { eq, inArray, sql } from "drizzle-orm";
+import { eq, inArray, sql, and, gte } from "drizzle-orm";
 
 /**
  * Analytics for HODs: Aggregates data for the entire department
@@ -68,7 +68,7 @@ export async function getDepartmentMetricsAction(userId: string) {
     return {
       success: true,
       data: {
-        departmentName: deptId,
+        departmentName: currentUser.departmentId || "General",
         totalEvents,
         totalRegistrations,
         totalRevenue,
@@ -82,7 +82,47 @@ export async function getDepartmentMetricsAction(userId: string) {
   }
 }
 
-function and(...conditions: any[]) {
-  // Helper since I didn't import it correctly above (oops, I did import it in registration.ts though)
-  return sql.join(conditions, sql` AND `);
+/**
+ * Participation Trends for Charts: Registrations per day for the last 30 days
+ */
+export async function getParticipationTrendsAction(userId: string) {
+  try {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const trends = await db
+      .select({
+        date: sql<string>`DATE(${schema.registrations.createdAt})`,
+        count: sql<number>`count(*)`
+      })
+      .from(schema.registrations)
+      .where(gte(schema.registrations.createdAt, thirtyDaysAgo))
+      .groupBy(sql`DATE(${schema.registrations.createdAt})`)
+      .orderBy(sql`DATE(${schema.registrations.createdAt})`);
+
+    return { success: true, data: trends };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
 }
+
+/**
+ * Category Distribution for Pie Charts
+ */
+export async function getCategoryDistributionAction(userId: string) {
+  try {
+    const distribution = await db
+      .select({
+        category: schema.events.category,
+        count: sql<number>`count(*)`
+      })
+      .from(schema.events)
+      .groupBy(schema.events.category);
+
+    return { success: true, data: distribution };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+

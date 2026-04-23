@@ -9,9 +9,9 @@ export function BottomNavigationBar() {
           <Home className="w-6 h-6 mb-1 text-muted-foreground group-hover:text-primary" />
           <span className="text-xs text-muted-foreground group-hover:text-primary">Home</span>
         </Link>
-        <Link href="/events" className="inline-flex flex-col items-center justify-center px-5 hover:bg-muted group">
-          <CalendarDays className="w-6 h-6 mb-1 text-muted-foreground group-hover:text-primary" />
-          <span className="text-xs text-muted-foreground group-hover:text-primary">Events</span>
+        <Link href="/explore" className="inline-flex flex-col items-center justify-center px-5 hover:bg-muted group">
+          <span className="material-symbols-outlined text-muted-foreground group-hover:text-primary transition-colors">explore</span>
+          <span className="text-[10px] font-medium text-muted-foreground group-hover:text-primary mt-1">Explore</span>
         </Link>
         <Link href="/tickets" className="inline-flex flex-col items-center justify-center px-5 hover:bg-muted group">
           <Ticket className="w-6 h-6 mb-1 text-muted-foreground group-hover:text-primary" />

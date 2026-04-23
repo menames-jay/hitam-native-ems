@@ -11,6 +11,11 @@ import { redirect } from "next/navigation";
  */
 export async function createEventAction(formData: FormData) {
   try {
+    const { getServerSession } = await import("@/lib/auth/role");
+    const session = await getServerSession();
+
+    if (!session) throw new Error("Unauthorized: Please log in to create events");
+
     const title = formData.get("title") as string;
     const description = formData.get("description") as string;
     const type = formData.get("type") as string; // 'club' or 'technical'
@@ -19,24 +24,26 @@ export async function createEventAction(formData: FormData) {
     const endTime = new Date(formData.get("endTime") as string);
     const isPaid = formData.get("isPaid") === "on";
     const price = isPaid ? parseInt(formData.get("price") as string) : 0;
-    const userId = formData.get("userId") as string;
-    const userRole = formData.get("userRole") as string;
     
     if (isPaid && isNaN(price)) {
       throw new Error("A valid price is required for paid events");
     }
     
     // 1. Create the Event record
+    const eventValues: any = {
+      title,
+      description,
+      status: "PENDING_APPROVAL",
+      createdBy: session.user.id,
+      category: (type?.toUpperCase() === 'CLUB' ? 'CLUB' : 'TECHNICAL'),
+      isPaid,
+      price: price || 0,
+      coverImage: "https://via.placeholder.com/1200x600?text=Institutional+Event+Poster",
+      updatedAt: new Date(),
+    };
+
     const [newEvent] = await db.insert(schema.events)
-      .values({
-        title,
-        description,
-        status: "PENDING_APPROVAL",
-        createdBy: userId,
-        isPaid,
-        price,
-        coverImage: "https://via.placeholder.com/1200x600?text=Institutional+Event+Poster" 
-      })
+      .values(eventValues)
       .returning();
 
     // 2. Create the Session & Venue Allocation
@@ -70,16 +77,15 @@ export async function createEventAction(formData: FormData) {
       });
 
     // 3. Initiate Governance Workflow
-    // Workflow A (Club): Coordinator -> LEAD_SE -> AO
-    // Workflow B (Technical): Faculty -> PROGRAM_HEAD -> HOD -> LEAD_SE -> AO
+    // CLUB: LEAD_SE -> AO
+    // TECHNICAL: PROGRAM_HEAD -> HOD -> LEAD_SE -> AO
     
     let firstApproverRole: string;
-    if (userRole === 'STUDENT_COORDINATOR') {
+    if (newEvent.category === 'CLUB') {
       firstApproverRole = 'LEAD_SE';
-    } else if (userRole === 'FACULTY') {
-      firstApproverRole = 'PROGRAM_HEAD';
     } else {
-      firstApproverRole = 'LEAD_SE'; // Default fallback
+      // TECHNICAL / Others
+      firstApproverRole = 'PROGRAM_HEAD';
     }
 
     await db.insert(schema.eventApprovals)
@@ -94,8 +100,8 @@ export async function createEventAction(formData: FormData) {
       .values({
         action: "EVENT_CREATED",
         entityId: newEvent.id,
-        userId: userId,
-        details: { workflow: userRole === 'FACULTY' ? 'Workflow B' : 'Workflow A', conflict: isConflict }
+        userId: session.user.id,
+        details: { category: newEvent.category, firstApprover: firstApproverRole, conflict: isConflict }
       });
 
     revalidatePath("/dashboard");
@@ -119,7 +125,9 @@ export async function getPendingApprovalsAction(role: string) {
         eq(approvals.status, "PENDING_APPROVAL")
       ),
       with: {
-        event: true
+        event: {
+          with: { creator: true }
+        }
       }
     });
 
@@ -134,17 +142,28 @@ export async function getPendingApprovalsAction(role: string) {
  * Process an approval/rejection for an event
  */
 export async function processApprovalAction(approvalId: string, status: "APPROVED" | "REJECTED", comments: string) {
+  const { getServerSession } = await import("@/lib/auth/role");
+  const session = await getServerSession();
+
+  if (!session) throw new Error("Unauthorized: Approval required");
+
   try {
+    const existingApproval = await db.query.eventApprovals.findFirst({
+        where: eq(schema.eventApprovals.id, approvalId),
+    });
+
+    if (!existingApproval) throw new Error("Approval record not found");
+    if (existingApproval.approverRole !== session.user.role && session.user.role !== "ADMIN") {
+        throw new Error(`Unauthorized: This event requires approval from ${existingApproval.approverRole}`);
+    }
+
     const [approval] = await db.update(schema.eventApprovals)
-      .set({ status, comments, updatedAt: new Date() })
+      .set({ status, comments, updatedAt: new Date(), approvedBy: session.user.id })
       .where(eq(schema.eventApprovals.id, approvalId))
       .returning();
 
     const event = await db.query.events.findFirst({
       where: eq(schema.events.id, approval.eventId),
-      with: {
-        creator: true
-      }
     });
 
     if (!event) throw new Error("Event not found");
@@ -155,13 +174,13 @@ export async function processApprovalAction(approvalId: string, status: "APPROVE
         .where(eq(schema.events.id, event.id));
     } else {
       // Logic for next in chain
-      // Workflow A: Coordinator -> LEAD_SE -> AO
-      // Workflow B: Faculty -> PROGRAM_HEAD -> HOD -> LEAD_SE -> AO
+      // CLUB: LEAD_SE -> AO
+      // TECHNICAL: PROGRAM_HEAD -> HOD -> LEAD_SE -> AO
       
-      const chainA = ['STUDENT_COORDINATOR', 'LEAD_SE', 'AO'];
-      const chainB = ['FACULTY', 'PROGRAM_HEAD', 'HOD', 'LEAD_SE', 'AO'];
+      const clubChain = ['LEAD_SE', 'AO'];
+      const techChain = ['PROGRAM_HEAD', 'HOD', 'LEAD_SE', 'AO'];
       
-      const currentChain = event.creator.role === 'FACULTY' ? chainB : chainA;
+      const currentChain = event.category === 'CLUB' ? clubChain : techChain;
       const currentIndex = currentChain.indexOf(approval.approverRole);
       
       if (currentIndex !== -1 && currentIndex < currentChain.length - 1) {
@@ -181,6 +200,9 @@ export async function processApprovalAction(approvalId: string, status: "APPROVE
     }
 
     revalidatePath("/dashboard");
+    revalidatePath("/approvals");
+    revalidatePath("/approvals/clubs");
+    revalidatePath("/approvals/technical");
     return { success: true };
   } catch (error) {
     console.error("Failed to process approval:", error);

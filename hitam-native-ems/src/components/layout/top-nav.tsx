@@ -1,4 +1,4 @@
-import { Bell, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 export function TopNotificationBar() {
@@ -16,10 +16,6 @@ export function TopNotificationBar() {
       </div>
       
       <div className="flex items-center gap-4">
-        <button className="relative p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors">
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary ring-2 ring-background"></span>
-        </button>
         <div className="flex items-center gap-3 ml-2 border-l border-border pl-4">
           <div className="text-right">
             <p className="text-sm font-medium leading-none">Logged In</p>

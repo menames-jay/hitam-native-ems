@@ -1,8 +1,7 @@
 import { db } from "@/lib/db";
 import * as schema from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { getServerSession } from "@/lib/auth/role";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -13,38 +12,72 @@ export default async function EventDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params;
-  const session = await auth.api.getSession({
-    headers: await headers()
-  });
+  const session = await getServerSession();
 
   if (!session) redirect("/login");
 
   const event = await db.query.events.findFirst({
     where: eq(schema.events.id, id),
     with: {
-      sessions: true,
-      department: true
+      sessions: {
+        with: {
+          venue: true
+        }
+      },
+      creator: {
+        with: {
+          department: true
+        }
+      }
     }
   });
 
   if (!event) notFound();
 
-  // Check if user is registered (Visual only for now)
-  const isRegistered = false;
+  // Actual Institutional Registration Check
+  const registration = await db.query.registrations.findFirst({
+    where: and(
+      eq(schema.registrations.eventId, id),
+      eq(schema.registrations.studentId, session.user.id)
+    )
+  });
+  
+  const isRegistered = !!registration;
+
+  // INSTITUTIONAL LIFECYCLE: Is the event past?
+  const isPast = event.sessions.every(s => new Date(s.endTime) < new Date());
+
+  // MANAGEMENT PRIVILEGE CHECK
+  const isPrivileged = session.user.id === event.createdBy || 
+                      ['ADMIN', 'LEAD_SE', 'AO'].includes(session.user.role);
+
+  // INSTITUTIONAL WINDOW: +/- 10 Minutes
+  const now = new Date();
+  const TEN_MINS = 10 * 60 * 1000;
+  
+  const activeSessionsForAttendance = event.sessions.filter(s => {
+    const startWindow = new Date(new Date(s.startTime).getTime() - TEN_MINS);
+    const endWindow = new Date(new Date(s.endTime).getTime() + TEN_MINS);
+    return now >= startWindow && now <= endWindow;
+  });
+
+  // Imports
+  const { RegisterButton } = await import("@/components/events/RegisterButton");
+  const { AttendanceControl } = await import("@/components/events/AttendanceControl");
 
   return (
     <div className="max-w-4xl mx-auto pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
       
       {/* Back Button */}
-      <Link href="/events" className="inline-flex items-center gap-2 mb-8 text-slate-500 font-bold hover:text-emerald-600 transition-colors">
+      <Link href="/explore" className="inline-flex items-center gap-2 mb-8 text-slate-500 font-bold hover:text-emerald-600 transition-colors">
         <span className="material-symbols-outlined text-sm">arrow_back</span>
-        <span className="text-xs uppercase tracking-widest">Back to Events</span>
+        <span className="text-xs uppercase tracking-widest">Back to Explore</span>
       </Link>
 
       {/* Hero Banner Section */}
       <div className="relative rounded-[3rem] overflow-hidden aspect-[16/9] md:aspect-[21/9] shadow-2xl mb-10 group">
         {event.coverImage ? (
-          <img src={event.coverImage} className="w-full h-full object-cover" alt={event.title} />
+          <img src={event.coverImage} className={cn("w-full h-full object-cover", isPast && "grayscale-[0.5]")} alt={event.title} />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
             <span className="material-symbols-outlined text-white text-9xl opacity-20">event_seat</span>
@@ -54,7 +87,7 @@ export default async function EventDetailPage({
         {/* Floating Category Badge */}
         <div className="absolute top-8 left-8">
            <span className="bg-white/20 backdrop-blur-xl border border-white/30 px-6 py-2 rounded-full text-xs font-black uppercase tracking-[0.2em] text-white">
-              {event.type || 'Institutional'}
+              {isPast ? "CONCLUDED" : (event.category || 'Institutional')}
            </span>
         </div>
       </div>
@@ -73,9 +106,24 @@ export default async function EventDetailPage({
               </div>
            </div>
 
-           {/* Sessions Section */}
+           {/* Management Mode (Coordinator Only) */}
+           {isPrivileged && activeSessionsForAttendance.length > 0 && (
+             <div className="space-y-6 animate-in zoom-in-95 duration-500 bg-emerald-50/50 dark:bg-emerald-500/5 p-8 rounded-[2.5rem] border border-emerald-100 dark:border-emerald-500/10">
+               <div className="flex items-center gap-3">
+                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                 <h3 className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.3em]">Institutional Control Mode</h3>
+               </div>
+               <div className="space-y-4">
+                 {activeSessionsForAttendance.map(s => (
+                   <AttendanceControl key={s.id} sessionId={s.id} eventTitle={`${event.title} - Active Session`} />
+                 ))}
+               </div>
+             </div>
+           )}
+
+           {/* Activity Sessions Section */}
            <div className="space-y-6">
-              <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Activity Sessions</h3>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Schedule & Venues</h3>
               <div className="space-y-4">
                 {event.sessions && event.sessions.length > 0 ? (
                   event.sessions.map((s, idx) => (
@@ -86,8 +134,14 @@ export default async function EventDetailPage({
                              <span className="text-xl font-black text-slate-900 dark:text-white group-hover:text-emerald-700">{idx + 1}</span>
                           </div>
                           <div>
-                            <p className="font-bold text-slate-900 dark:text-white">{s.name}</p>
-                            <p className="text-xs text-slate-500 font-medium mt-1">Starts at {new Date(s.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                            <p className="font-bold text-slate-900 dark:text-white">Session {idx + 1}</p>
+                            <div className="flex items-center gap-2 text-xs text-slate-500 font-medium mt-1">
+                               <span className="material-symbols-outlined text-[14px]">schedule</span>
+                               <span>{new Date(s.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                               <span className="mx-1">•</span>
+                               <span className="material-symbols-outlined text-[14px]">pin_drop</span>
+                               <span>{s.venue?.name || "Main Campus"}</span>
+                            </div>
                           </div>
                        </div>
                        <span className="material-symbols-outlined text-slate-200 group-hover:text-emerald-500 transition-colors">circle</span>
@@ -107,7 +161,7 @@ export default async function EventDetailPage({
            <div className="bg-emerald-600 text-white rounded-[2.5rem] p-10 space-y-8 shadow-xl shadow-emerald-100 dark:shadow-none">
               <div>
                  <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-2">Registration Status</p>
-                 <h4 className="text-2xl font-black">Open for All</h4>
+                 <h4 className="text-2xl font-black">{isRegistered ? "Confirmed" : (isPast ? "Closed" : "Open for All")}</h4>
               </div>
 
               <div className="space-y-5">
@@ -122,7 +176,7 @@ export default async function EventDetailPage({
                     <span className="material-symbols-outlined opacity-60">pin_drop</span>
                     <div className="text-sm">
                        <p className="font-black">Venue</p>
-                       <p className="font-medium opacity-80 truncate max-w-[150px]">{event.venueId || 'Central Auditorium'}</p>
+                       <p className="font-medium opacity-80 truncate max-w-[150px]">{event.sessions?.[0]?.venue?.name || 'Main Campus'}</p>
                     </div>
                  </div>
                  <div className="flex items-center gap-4">
@@ -134,22 +188,37 @@ export default async function EventDetailPage({
                  </div>
               </div>
 
-              <button className="w-full py-5 bg-white text-emerald-600 font-extrabold rounded-2xl shadow-lg ring-offset-2 ring-offset-emerald-600 hover:scale-[1.02] active:scale-95 transition-all">
-                {isRegistered ? "ALREADY REGISTERED" : "REGISTER NOW"}
-              </button>
-           </div>
-           
-           <div className="bg-white dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-[2.5rem] p-10 space-y-6">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Organized By</p>
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-600">
-                   <span className="material-symbols-outlined">hub</span>
-                </div>
-                <div>
-                   <p className="font-black text-slate-900 dark:text-white">{event.department?.name || 'Institutional Events'}</p>
-                   <p className="text-[10px] font-bold text-slate-400 uppercase">{event.department?.code || 'HITAM'}</p>
-                </div>
-              </div>
+              {isRegistered ? (
+                 <div className="space-y-4">
+                    <div className="w-full py-5 bg-emerald-500/10 text-emerald-600 border-2 border-emerald-600/20 text-center font-extrabold rounded-2xl flex items-center justify-center gap-2 text-xs uppercase tracking-widest">
+                       <span className="material-symbols-outlined text-sm">verified</span>
+                       ALREADY REGISTERED
+                    </div>
+                    
+                    {activeSessionsForAttendance.length > 0 && (
+                      <Link 
+                        href={`/scanner?sessionId=${activeSessionsForAttendance[0].id}`}
+                        className="w-full py-5 bg-slate-900 text-white text-center font-extrabold rounded-2xl flex items-center justify-center gap-2 text-xs uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-xl shadow-slate-900/10"
+                      >
+                         <span className="material-symbols-outlined text-sm">qr_code_scanner</span>
+                         SCAN TO MARK ATTENDANCE
+                      </Link>
+                    )}
+                 </div>
+              ) : isPast ? (
+                 <div className="w-full py-5 bg-slate-500/20 text-white border-2 border-white/10 text-center font-extrabold rounded-2xl flex items-center justify-center gap-2 text-xs uppercase tracking-widest opacity-60">
+                    <span className="material-symbols-outlined text-sm">block</span>
+                    REGISTRATION CLOSED
+                 </div>
+              ) : (
+                 <RegisterButton 
+                    eventId={event.id} 
+                    studentId={session.user.id} 
+                    isPaid={event.isPaid}
+                    price={event.price}
+                    eventTitle={event.title}
+                 />
+              )}
            </div>
         </div>
 

@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { getServerRole } from "@/lib/auth/role";
 import "./globals.css";
 
 const inter = Inter({
@@ -20,15 +19,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Try securely grabbing the dynamic theme role based on server session
-  const headersList = await headers();
-  const sessionData = await auth.api.getSession({
-    headers: headersList
-  });
-
-  // Developer Bypass
-  const devRole = process.env.NODE_ENV === "development" ? headersList.get("x-ems-role") : null;
-  const role = devRole || (sessionData?.user as any)?.role || "STUDENT";
+  const role = await getServerRole() || "STUDENT";
 
   return (
     <html

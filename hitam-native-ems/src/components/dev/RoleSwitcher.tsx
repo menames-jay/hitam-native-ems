@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { updateUserRoleAction } from "@/lib/actions/dev";
+import { setDevRoleAction } from "@/lib/actions/dev";
 import { useRouter } from "next/navigation";
 
 const ROLES = [
@@ -16,7 +16,7 @@ const ROLES = [
   { id: "ADMIN", label: "Super Admin", color: "bg-[#0f172a]" },
 ];
 
-export function RoleSwitcher({ userId, currentRole }: { userId: string, currentRole: string }) {
+export function RoleSwitcher({ currentRole }: { currentRole: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const router = useRouter();
@@ -25,17 +25,17 @@ export function RoleSwitcher({ userId, currentRole }: { userId: string, currentR
     if (newRole === currentRole || isPending) return;
     
     setIsPending(true);
-    const res = await updateUserRoleAction(userId, newRole);
+    const res = await setDevRoleAction(newRole);
     
     if (res.success) {
       // Small delay to show transition
       setTimeout(() => {
-        setIsOpen(false);
         setIsPending(false);
+        router.push("/dashboard");
         router.refresh(); // Crucial for layout fresh-fetch
       }, 300);
     } else {
-      alert("Failed to switch role: " + res.error);
+      alert("Failed to switch role");
       setIsPending(false);
     }
   };

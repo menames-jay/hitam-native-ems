@@ -5,6 +5,7 @@ import * as schema from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import Razorpay from "razorpay";
+import crypto from "crypto";
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || "rzp_test_placeholder",
@@ -14,7 +15,13 @@ const razorpay = new Razorpay({
 /**
  * Student Registration Flow
  */
-export async function registerForEventAction(eventId: string, studentId: string) {
+export async function registerForEventAction(eventId: string, _ignoredStudentId?: string) {
+  const { getServerSession } = await import("@/lib/auth/role");
+  const session = await getServerSession();
+
+  if (!session) throw new Error("Unauthorized: Please log in to register for events.");
+  const studentId = session.user.id;
+
   try {
     // 1. Check if already registered
     const existing = await db.query.registrations.findFirst({
@@ -73,7 +80,20 @@ export async function registerForEventAction(eventId: string, studentId: string)
           studentId,
         });
 
-      revalidatePath(`/events/${eventId}`);
+      // NOTIFICATION LEDGER
+      await db.insert(schema.notifications).values({
+        userId: studentId,
+        title: "Registration Confirmed",
+        message: `You've successfully registered for the event. Check your upcoming sessions for details.`
+      });
+
+      // EMAIL NOTIFICATION
+      const student = await db.query.user.findFirst({ where: eq(schema.user.id, studentId) });
+      if (student?.email) {
+        const { sendRegistrationEmail } = await import("@/lib/services/email-service");
+        sendRegistrationEmail(student.email, event.title, new Date().toLocaleDateString()).catch(console.error);
+      }
+
       return { success: true, requiresPayment: false };
     }
   } catch (error) {
@@ -83,17 +103,68 @@ export async function registerForEventAction(eventId: string, studentId: string)
 }
 
 /**
- * Verify Razorpay Payment (Simplified for now)
+ * Verify Razorpay Payment (Production Hardened)
  */
-export async function verifyPaymentAction(registrationId: string, paymentId: string, orderId: string) {
+export async function verifyPaymentAction(
+  registrationId: string, 
+  paymentId: string, 
+  orderId: string,
+  signature: string
+) {
   try {
-    // In a real app, verify signature here
+    const secret = process.env.RAZORPAY_KEY_SECRET || "placeholder_secret";
+    
+    // 1. Cryptographic Signature Verification
+    const body = orderId + "|" + paymentId;
+    const expectedSignature = crypto
+      .createHmac("sha256", secret)
+      .update(body.toString())
+      .digest("hex");
+
+    if (expectedSignature !== signature) {
+      // LOG THE BREACH ATTEMPT
+      await db.insert(schema.auditLogs).values({
+        action: "PAYMENT_SIGNATURE_MISMATCH",
+        entityId: registrationId,
+        userId: "SYSTEM",
+        details: { orderId, paymentId, signature }
+      });
+      throw new Error("Invalid institutional payment signature. Governance breach detected.");
+    }
+
+    // 2. Fetch Registration & Student Context
+    const registration = await db.query.registrations.findFirst({
+      where: eq(schema.registrations.id, registrationId),
+      with: {
+        event: true,
+        student: true
+      }
+    });
+
+    if (!registration) throw new Error("Registration record missing.");
+
+    // 3. Update Payment Status to COMPLETED
     await db.update(schema.paymentRecords)
       .set({ 
-        status: "SUCCESS",
-        razorpayPaymentId: paymentId
+        status: "COMPLETED", 
+        razorpayPaymentId: paymentId,
+        razorpaySignature: signature 
       })
       .where(eq(schema.paymentRecords.registrationId, registrationId));
+
+    // 4. Institutional Audit Log
+    await db.insert(schema.auditLogs).values({
+      action: "PAYMENT_COMPLETED",
+      entityId: registrationId,
+      userId: registration.studentId,
+      details: { amount: registration.event.price, event: registration.event.title }
+    });
+
+    // 5. Institutional Email Notification (Async)
+    if (registration.student?.email) {
+      const { sendRegistrationEmail } = await import("@/lib/services/email-service");
+      sendRegistrationEmail(registration.student.email, registration.event.title, new Date().toLocaleDateString()).catch(console.error);
+    }
 
     revalidatePath("/registrations");
     return { success: true };

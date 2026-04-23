@@ -85,7 +85,7 @@ export function ApprovalCenter({ role, themeColor, bgAccent }: ApprovalCenterPro
             <div className="flex flex-wrap justify-center md:justify-start gap-4">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
                 <span className="material-symbols-outlined text-sm">person</span>
-                Proposed by {approval.event?.createdBy}
+                Proposed by {approval.event?.creator?.name || 'Institutional Lead'}
               </span>
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
                 <span className="material-symbols-outlined text-sm">payments</span>

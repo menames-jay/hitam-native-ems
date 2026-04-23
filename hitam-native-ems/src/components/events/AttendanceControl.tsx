@@ -28,44 +28,69 @@ export function AttendanceControl({ sessionId, eventTitle }: AttendanceControlPr
   };
 
   return (
-    <div className="bg-white dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-[3rem] p-10 shadow-2xl space-y-8 flex flex-col items-center text-center max-w-lg mx-auto">
-      <div className="space-y-2">
-        <h3 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Attendance Session</h3>
-        <p className="text-slate-500 font-medium px-4">{eventTitle}</p>
-      </div>
-
+    <div className="bg-white dark:bg-white/5 border border-emerald-100 dark:border-emerald-500/10 rounded-3xl p-6 space-y-6 animate-in slide-in-from-top-4 duration-500">
+      
       {!token ? (
-        <button 
-          onClick={startSession}
-          disabled={isLoading}
-          className="w-full bg-primary hover:bg-[#225c23] text-white py-5 rounded-2xl font-black text-lg transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-3 disabled:opacity-50"
-        >
-          {isLoading ? "Generating..." : "Generate Attendance QR"}
-          <span className="material-symbols-outlined">qr_code_2</span>
-        </button>
-      ) : (
-        <>
-          <div className="p-8 bg-white rounded-[2.5rem] shadow-inner border border-slate-100">
-            <QRCodeSVG value={token} size={256} level="H" />
-          </div>
-
-          <div className="space-y-4 w-full">
-            <div className="p-6 bg-slate-50 dark:bg-white/5 rounded-3xl border border-dashed border-slate-200 dark:border-white/10">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Fallback Code</p>
-              <p className="text-4xl font-black text-primary tracking-[0.2em]">{fallbackCode}</p>
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-600">
+              <span className="material-symbols-outlined">qr_code_scanner</span>
             </div>
-            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest leading-relaxed px-6">
-              Students can scan this QR or use the fallback code if the camera fails.
-            </p>
+            <div>
+              <h4 className="font-black text-slate-900 dark:text-white uppercase tracking-tight">Generate Session Token</h4>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{eventTitle}</p>
+            </div>
+          </div>
+          <button 
+            onClick={startSession}
+            disabled={isLoading}
+            className="w-full md:w-auto px-8 py-4 bg-emerald-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg shadow-emerald-200 dark:shadow-none disabled:opacity-50"
+          >
+            {isLoading ? "PRODUCING..." : "START ATTENDANCE"}
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-inner">
+              <QRCodeSVG value={token} size={180} level="H" />
+            </div>
+            <div className="flex items-center gap-4 mt-4">
+              <button 
+                onClick={() => setToken(null)}
+                className="text-slate-400 hover:text-red-500 font-black text-[10px] uppercase tracking-widest transition-colors flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-sm">cancel</span>
+                End Session
+              </button>
+              <span className="text-slate-200">|</span>
+              <button 
+                onClick={startSession}
+                disabled={isLoading}
+                className="text-emerald-500 hover:text-emerald-700 font-black text-[10px] uppercase tracking-widest transition-colors flex items-center gap-2 disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-sm">refresh</span>
+                {isLoading ? "Regenerating..." : "Regenerate Token"}
+              </button>
+            </div>
           </div>
 
-          <button 
-            onClick={() => setToken(null)}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-white font-black text-[10px] uppercase tracking-widest transition-colors"
-          >
-            End Attendance Session
-          </button>
-        </>
+          <div className="space-y-6">
+            <div className="p-6 bg-slate-50 dark:bg-white/5 rounded-2xl border border-dashed border-slate-200 dark:border-white/10 text-center">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Manual Fallback Code</p>
+              <p className="text-4xl font-black text-emerald-600 tracking-[0.2em]">{fallbackCode}</p>
+            </div>
+            <div className="space-y-2">
+               <div className="flex items-center gap-2 text-emerald-600 font-black text-[10px] uppercase tracking-widest">
+                  <span className="material-symbols-outlined text-sm">info</span>
+                  Institutional Rule
+               </div>
+               <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                 Display this QR on the projector. This token expires in 60 minutes. Attendance is linked to the active ERP ledger.
+               </p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

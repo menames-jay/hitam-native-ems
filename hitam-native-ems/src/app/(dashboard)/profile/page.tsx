@@ -1,33 +1,21 @@
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { getServerSession } from "@/lib/auth/role";
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
-import * as schema from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 import { ROLE_CONFIGS } from "@/lib/config/roles";
+import Link from "next/link";
+import { TriggerRemindersButton } from "@/components/dev/trigger-reminders";
+import { NotificationsToggle } from "@/components/profile/notifications-toggle";
 
 export default async function ProfilePage() {
-  const headersList = await headers();
-  const session = await auth.api.getSession({
-    headers: headersList,
-  });
+  const session = await getServerSession();
 
   if (!session) {
     redirect("/login");
   }
 
-  const freshUser = await db.query.user.findFirst({
-    where: eq(schema.user.id, session.user.id),
-    with: {
-      department: true
-    }
-  });
-
-  // Developer Bypass
-  const devRole = process.env.NODE_ENV === "development" ? headersList.get("x-ems-role") : null;
-  const role = devRole || freshUser?.role || "STUDENT";
+  const freshUser = session.user;
+  const role = freshUser.role;
   const config = ROLE_CONFIGS[role] || ROLE_CONFIGS.STUDENT;
 
   return (
@@ -94,10 +82,27 @@ export default async function ProfilePage() {
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Event & Status updates</p>
               </div>
             </div>
-            <div className="w-14 h-7 rounded-full bg-slate-200 dark:bg-white/10 p-1.5 cursor-not-allowed">
-              <div className="w-4 h-4 rounded-full bg-white shadow-md translate-x-7" />
-            </div>
+            <NotificationsToggle 
+              userId={freshUser.id} 
+              initialEnabled={freshUser.notificationsEnabled} 
+            />
           </div>
+
+          <div className="h-px bg-slate-100 dark:bg-white/5 mx-8" />
+
+          {/* New Notifications Ledger Bar */}
+          <Link href="/notifications" className="flex items-center justify-between p-8 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-all group">
+            <div className="flex items-center gap-5">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-500/10 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+                <span className="material-symbols-outlined text-emerald-600 dark:text-emerald-400">notifications_active</span>
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-base font-bold text-slate-900 dark:text-white leading-none">Notifications Ledger</p>
+                <p className="text-[10px] text-emerald-600/60 dark:text-emerald-400/60 font-black uppercase tracking-widest mt-1">Review live institutional alerts</p>
+              </div>
+            </div>
+            <span className="material-symbols-outlined text-emerald-600/30 group-hover:translate-x-1 transition-transform">east</span>
+          </Link>
         </div>
       </div>
 
@@ -118,6 +123,14 @@ export default async function ProfilePage() {
             </div>
             <span className="material-symbols-outlined text-slate-300 group-hover:translate-x-1 transition-transform">east</span>
           </button>
+
+          {/* Developer Tools (Authorized Roles Only) */}
+          {['ADMIN', 'AO', 'LEAD_SE'].includes(role) && (
+            <>
+              <div className="h-px bg-slate-100 dark:bg-white/5 mx-8" />
+              <TriggerRemindersButton />
+            </>
+          )}
 
           <div className="h-px bg-slate-100 dark:bg-white/5 mx-8" />
 

@@ -15,22 +15,22 @@ export function DashboardHeader({ role, userName, config }: DashboardHeaderProps
           {role.replace('_', ' ')} Dashboard
         </p>
         <h2 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
-          Hi, {(userName || "User").split(" ")[0]}!
+          Hey, {(userName || "User")}!
         </h2>
         <p className="text-slate-500 dark:text-slate-400 font-medium max-w-md">
-          Here is your dynamic overview for the current academic session.
+          Welcome back! Take a look at what's in store for you today.
         </p>
       </div>
-      
+
       {/* Context Card */}
       <div className="flex items-center gap-4 bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 p-4 rounded-3xl shadow-sm z-10">
-         <div className="text-right">
-           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">System Status</p>
-           <p className="text-sm font-black text-slate-900 dark:text-white">Active</p>
-         </div>
-         <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center", config.theme.accent, "text-white")}>
-            <span className="material-symbols-outlined">{config.icons.header}</span>
-         </div>
+        <div className="text-right">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">System Status</p>
+          <p className="text-sm font-black text-slate-900 dark:text-white">Active</p>
+        </div>
+        <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center", config.theme.accent, "text-white")}>
+          <span className="material-symbols-outlined">{config.icons.header}</span>
+        </div>
       </div>
     </header>
   );

@@ -18,9 +18,9 @@ export function DesktopSidebar() {
           <Home className="h-5 w-5" />
           Dashboard
         </Link>
-        <Link href="/events" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-          <CalendarDays className="h-5 w-5" />
-          Events
+        <Link href="/explore" className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-black text-slate-500 hover:bg-emerald-50 hover:text-emerald-700 transition-all uppercase tracking-widest">
+           <span className="material-symbols-outlined text-[20px]">explore</span>
+           Explore Hub
         </Link>
         <Link href="/tickets" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
           <Ticket className="h-5 w-5" />

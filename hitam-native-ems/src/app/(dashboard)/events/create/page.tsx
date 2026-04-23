@@ -1,9 +1,8 @@
-import { auth } from "@/lib/auth";
+import { getServerSession } from "@/lib/auth/role";
 import { db } from "@/lib/db";
 import * as schema from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { cn } from "@/lib/utils";
 import { EventCreateForm } from "@/components/events/EventCreateForm";
 import { seedVenues } from "@/lib/db/seed";
@@ -20,9 +19,7 @@ const THEME_MAP: Record<string, { accent: string; text: string; bg: string }> = 
 };
 
 export default async function CreateEventPage() {
-  const session = await auth.api.getSession({
-    headers: await headers()
-  });
+  const session = await getServerSession();
 
   if (!session) {
     redirect("/login");
@@ -35,11 +32,7 @@ export default async function CreateEventPage() {
   }
   const freshVenues = await db.query.venues.findMany();
 
-  const freshUser = await db.query.user.findFirst({
-    where: eq(schema.user.id, session.user.id)
-  });
-
-  const role = freshUser?.role || "STUDENT";
+  const role = session.user.role;
   const theme = THEME_MAP[role] || THEME_MAP.STUDENT;
 
   // Governance logic: Workflow A (Coordinator) vs Workflow B (Faculty)

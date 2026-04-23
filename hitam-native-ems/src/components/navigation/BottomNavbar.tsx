@@ -26,7 +26,8 @@ export function BottomNavbar({ role }: { role: string }) {
                   className={cn(
                     "w-14 h-14 rounded-full flex items-center justify-center -translate-y-6 shadow-xl transition-all duration-300",
                     theme.accent,
-                    "text-white border-[6px] border-white dark:border-[#0a0f0a] active:scale-95"
+                    "text-white border-[6px] border-white dark:border-[#0a0f0a] active:scale-95",
+                    isActive && "ring-4 ring-emerald-500/20"
                   )}
                 >
                   <span className="material-symbols-outlined text-[28px]">{slot.icon}</span>

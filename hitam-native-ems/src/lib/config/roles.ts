@@ -35,24 +35,25 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
       { label: "Home", icon: "home", href: "/dashboard" },
       { label: "Explore", icon: "explore", href: "/explore" },
       { label: "Scan", icon: "qr_code_scanner", href: "/scanner", isHero: true },
-      { label: "Events", icon: "event_note", href: "/my-events" },
+      { label: "My Events", icon: "event_note", href: "/my-events" },
       { label: "Profile", icon: "person", href: "/profile" },
     ],
     actions: [
       { label: "Browse Events", href: "/events", icon: "search", key: "action-1" },
-      { label: "My Registrations", href: "/events/registered", icon: "how_to_reg", key: "action-2" },
-      { label: "Scan QR", href: "/attendance/scan", icon: "qr_code_scanner", key: "action-3" }
+      { label: "My Registrations", href: "/my-events", icon: "how_to_reg", key: "action-2" },
+      { label: "Scan QR", href: "/scanner", icon: "qr_code_scanner", key: "action-3" },
+      { label: "Attendance Timeline", href: "/attendance/history", icon: "history", key: "action-4" }
     ]
   },
   STUDENT_COORDINATOR: {
     theme: { accent: "bg-[#10b981]", text: "text-[#10b981]", colorName: "amber" },
-    icons: { header: "sports_cricket", metric1: "add_box", metric2: "group", metric3: "analytics" },
-    labels: { metric1: "My Draft Events", metric2: "Total Registrations", metric3: "Club Analytics" },
+    icons: { header: "sports_cricket", metric1: "bolt", metric2: "group", metric3: "calendar_month" },
+    labels: { metric1: "Active Sessions", metric2: "Total Registrations", metric3: "Upcoming Events" },
     navigation: [
       { label: "Home", icon: "home", href: "/dashboard" },
       { label: "Analytics", icon: "analytics", href: "/analytics" },
       { label: "Create", icon: "add_circle_outline", href: "/events/create", isHero: true },
-      { label: "Regs", icon: "group_work", href: "/registrations" },
+      { label: "My Events", icon: "event_note", href: "/my-events" },
       { label: "Profile", icon: "person", href: "/profile" },
     ],
     actions: [
@@ -63,30 +64,30 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
   },
   FACULTY: {
     theme: { accent: "bg-[#2b6cee]", text: "text-[#2b6cee]", colorName: "blue" },
-    icons: { header: "person_4", metric1: "table_chart", metric2: "hourglass_empty", metric3: "architecture" },
-    labels: { metric1: "ERP Classes Pending", metric2: "Pending Approvals", metric3: "Technical Events" },
+    icons: { header: "person_4", metric1: "bolt", metric2: "rate_review", metric3: "calendar_month" },
+    labels: { metric1: "Live Technicals", metric2: "Pending Approvals", metric3: "Upcoming Events" },
     navigation: [
       { label: "Home", icon: "home", href: "/dashboard" },
-      { label: "ERP", icon: "table_chart", href: "/attendance/erp" },
-      { label: "Approve", icon: "fact_check", href: "/approvals", isHero: true },
-      { label: "History", icon: "history", href: "/history" },
+      { label: "Classes", icon: "view_list", href: "/attendance" },
+      { label: "Attendance", icon: "how_to_reg", href: "/attendance/erp", isHero: true },
+      { label: "My Events", icon: "event_note", href: "/my-events" },
       { label: "Profile", icon: "person", href: "/profile" },
     ],
     actions: [
-      { label: "Submit ERP Attendance", href: "/erp/attendance", icon: "fact_check", key: "action-1" },
+      { label: "Submit ERP Attendance", href: "/attendance/erp", icon: "fact_check", key: "action-1" },
       { label: "New Tech Event (W-B)", href: "/events/create?type=technical", icon: "add", key: "action-2" },
       { label: "Review Approvals", href: "/approvals", icon: "rate_review", key: "action-3" }
     ]
   },
   PROGRAM_HEAD: {
     theme: { accent: "bg-[#6366f1]", text: "text-[#6366f1]", colorName: "indigo" },
-    icons: { header: "account_balance", metric1: "domain_verification", metric2: "rule", metric3: "event_note" },
-    labels: { metric1: "Pending Verification", metric2: "Attendance Edits", metric3: "Dept Events" },
+    icons: { header: "account_balance", metric1: "bolt", metric2: "rule", metric3: "calendar_month" },
+    labels: { metric1: "Dept Active Sessions", metric2: "Pending Approvals", metric3: "Dept Upcoming Events" },
     navigation: [
       { label: "Home", icon: "home", href: "/dashboard" },
-      { label: "Stats", icon: "monitoring", href: "/analytics" },
-      { label: "Approve", icon: "verified_user", href: "/approvals", isHero: true },
-      { label: "Calendar", icon: "calendar_view_day", href: "/calendar" },
+      { label: "Analytics", icon: "monitoring", href: "/analytics" },
+      { label: "Verify", icon: "verified_user", href: "/approvals", isHero: true },
+      { label: "Calendar", icon: "calendar_month", href: "/calendar" },
       { label: "Profile", icon: "person", href: "/profile" },
     ],
     actions: [
@@ -103,7 +104,7 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
       { label: "Home", icon: "home", href: "/dashboard" },
       { label: "Analytics", icon: "insights", href: "/analytics" },
       { label: "Reports", icon: "summarize", href: "/reports", isHero: true },
-      { label: "Calendar", icon: "event_seat", href: "/calendar" },
+      { label: "Calendar", icon: "calendar_month", href: "/calendar" },
       { label: "Profile", icon: "person", href: "/profile" },
     ],
     actions: [
@@ -119,8 +120,8 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
     navigation: [
       { label: "Home", icon: "home", href: "/dashboard" },
       { label: "Analytics", icon: "campaign", href: "/analytics" },
-      { label: "Approve", icon: "task_alt", href: "/approvals", isHero: true },
-      { label: "Admin", icon: "settings_suggest", href: "/settings/se" },
+      { label: "Review", icon: "task_alt", href: "/approvals", isHero: true },
+      { label: "My Events", icon: "event_note", href: "/my-events" },
       { label: "Profile", icon: "person", href: "/profile" },
     ],
     actions: [
@@ -137,7 +138,7 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
       { label: "Home", icon: "home", href: "/dashboard" },
       { label: "Rooms", icon: "grid_view", href: "/venues/schedule" },
       { label: "Alloc", icon: "dynamic_feed", href: "/venues/queue", isHero: true },
-      { label: "Conflicts", icon: "edit_calendar", href: "/venues/conflicts" },
+      { label: "Venues", icon: "meeting_room", href: "/venues" },
       { label: "Profile", icon: "person", href: "/profile" },
     ],
     actions: [
@@ -153,8 +154,8 @@ export const ROLE_CONFIGS: Record<string, RoleConfig> = {
     navigation: [
       { label: "Home", icon: "home", href: "/dashboard" },
       { label: "Users", icon: "person_search", href: "/admin/users" },
-      { label: "System", icon: "admin_panel_settings", href: "/admin/security", isHero: true },
-      { label: "Logs", icon: "list_alt", href: "/admin/logs" },
+      { label: "Security", icon: "admin_panel_settings", href: "/admin/security", isHero: true },
+      { label: "Settings", icon: "settings", href: "/settings" },
       { label: "Profile", icon: "person", href: "/profile" },
     ],
     actions: [

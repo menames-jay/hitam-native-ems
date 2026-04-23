@@ -1,8 +1,13 @@
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { getServerSession } from "@/lib/auth/role";
 import { redirect } from "next/navigation";
-import { getDepartmentMetricsAction } from "@/lib/actions/analytics";
+import { 
+  getDepartmentMetricsAction, 
+  getParticipationTrendsAction, 
+  getCategoryDistributionAction 
+} from "@/lib/actions/analytics";
 import { cn } from "@/lib/utils";
+import { AnalyticsCharts } from "@/components/analytics/AnalyticsCharts";
+import { CSVDownloadButton } from "@/components/analytics/CSVDownloadButton";
 
 const ROLE_THEMES: Record<string, { accent: string; text: string; bg: string }> = {
   STUDENT: { accent: "bg-[#2E7D32]", text: "text-[#2E7D32]", bg: "bg-[#2E7D32]/5" },
@@ -16,31 +21,39 @@ const ROLE_THEMES: Record<string, { accent: string; text: string; bg: string }> 
 };
 
 export default async function AnalyticsPage() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const session = await getServerSession();
 
   if (!session) {
     redirect("/login");
   }
 
-  const user = session.user as any;
-  const role = user.role || "STUDENT";
+  const user = session.user;
+  const role = user.role;
   const theme = ROLE_THEMES[role] || ROLE_THEMES.STUDENT;
 
-  const res = await getDepartmentMetricsAction(session.user.id);
-  const data = res.success ? res.data : null;
+  // Parallel data fetching for performance
+  const [metricsRes, trendsRes, categoriesRes] = await Promise.all([
+    getDepartmentMetricsAction(user.id),
+    getParticipationTrendsAction(user.id),
+    getCategoryDistributionAction(user.id)
+  ]);
+
+  const data = metricsRes.success ? metricsRes.data : null;
+  const trends = trendsRes.success ? trendsRes.data : [];
+  const categories = categoriesRes.success ? categoriesRes.data : [];
 
   return (
-    <div className="space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+    <div className="space-y-12 pb-20 animate-in fade-in slide-in-from-bottom-8 duration-1000">
       {/* Header Profile Section */}
-      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 px-4 md:px-0">
-        <div className="space-y-1">
-          <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter italic uppercase">Analytics</h1>
-          <p className={cn("text-[10px] md:text-[11px] font-black uppercase tracking-[0.3em] opacity-60", theme.text)}>
-             Institutional Hub • Dept: {data?.departmentName || "General"}
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 px-4 md:px-2">
+        <div className="space-y-2">
+          <span className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.4em] block">Institutional Hub</span>
+          <h1 className="text-5xl md:text-7xl font-black text-slate-900 dark:text-white tracking-tighter italic uppercase leading-none">Analytics</h1>
+          <p className={cn("text-xs font-bold uppercase tracking-widest opacity-60", theme.text)}>
+             Dept Intelligence • {data?.departmentName || "Institutional General"}
           </p>
         </div>
+        <CSVDownloadButton data={trends as any} filename={`HITAM_EMS_Report_${new Date().toISOString().split('T')[0]}.csv`} />
       </div>
 
       {/* Main Stats Grid */}
@@ -61,7 +74,7 @@ export default async function AnalyticsPage() {
         />
         <StatCard 
           label="Total Revenue" 
-          value={`₹${(data?.totalRevenue || 0).toLocaleString()}`} 
+          value={`\u20B9${(data?.totalRevenue || 0).toLocaleString()}`} 
           icon="payments" 
           theme={theme}
           description="Net collections from paid events"
@@ -75,33 +88,16 @@ export default async function AnalyticsPage() {
         />
       </div>
 
-      {/* Placeholder Details Section */}
-      <div className="bg-white dark:bg-white/5 rounded-[2.5rem] md:rounded-[3.5rem] p-8 md:p-12 border border-slate-200 dark:border-white/10 shadow-2xl relative overflow-hidden">
-        <div className={cn("absolute -top-24 -right-24 w-64 h-64 rounded-full opacity-10 blur-3xl", theme.accent)} />
-        
-        <div className="relative space-y-8">
-           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="space-y-1">
-                <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Recent Engagement</h3>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
-                  Daily registration volume across the department.
-                </p>
-              </div>
-              <div className="flex gap-2">
-                 <button className={cn("px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest text-white shadow-xl transition-all hover:scale-105 active:scale-95", theme.accent)}>
-                    Download Report
-                 </button>
-              </div>
-           </div>
+      {/* Analytics Charts Section */}
+      <div className="px-4 md:px-0">
+         <AnalyticsCharts trendData={trends as any} categoryData={categories as any} theme={theme} />
+      </div>
 
-           {/* Simple Data Table (Placeholder for actual chart) */}
-           <div className="bg-slate-50 dark:bg-[#0a0f0a]/50 rounded-[2rem] p-6 text-center border border-slate-100 dark:border-white/5">
-              <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-700 mb-2">monitoring</span>
-              <p className="text-xs font-black text-slate-400 dark:text-slate-600 uppercase tracking-widest">
-                 Live chart modules for registration trends are coming in v1.1
-              </p>
-           </div>
-        </div>
+      <div className="bg-slate-50 dark:bg-white/5 p-12 rounded-[3.5rem] border border-slate-100 dark:border-white/5 text-center space-y-4">
+         <span className="material-symbols-outlined text-4xl text-slate-300">verified</span>
+         <p className="text-xs font-black text-slate-400 uppercase tracking-widest max-w-md mx-auto leading-relaxed">
+            Data aggregates are refreshed every 4 hours. Download the institutional CSV for full row-level participation audits.
+         </p>
       </div>
     </div>
   );
@@ -109,19 +105,19 @@ export default async function AnalyticsPage() {
 
 function StatCard({ label, value, icon, description, theme }: { label: string, value: any, icon: string, description: string, theme: any }) {
   return (
-    <div className="bg-white dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-[2.5rem] p-8 shadow-xl hover:shadow-2xl transition-all group overflow-hidden relative">
+    <div className="bg-white dark:bg-white/5 border border-slate-100 dark:border-white/10 rounded-[3rem] p-10 shadow-xl hover:shadow-2xl transition-all group overflow-hidden relative">
       <div className={cn("absolute bottom-0 right-0 w-24 h-24 rounded-full -mb-12 -mr-12 opacity-5 blur-2xl group-hover:opacity-10 transition-opacity", theme.accent)} />
       
       <div className="relative space-y-6">
         <div className="flex items-center justify-between">
-          <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg", theme.accent)}>
-            <span className="material-symbols-outlined text-white text-[24px]">{icon}</span>
+          <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg", theme.accent)}>
+            <span className="material-symbols-outlined text-white text-[28px]">{icon}</span>
           </div>
         </div>
 
         <div className="space-y-0.5">
           <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em]">{label}</h4>
-          <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter tabular-nums">{value}</p>
+          <p className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter tabular-nums leading-none mt-2">{value}</p>
         </div>
 
         <p className="text-[9px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-widest leading-relaxed">
@@ -131,3 +127,4 @@ function StatCard({ label, value, icon, description, theme }: { label: string, v
     </div>
   );
 }
+
