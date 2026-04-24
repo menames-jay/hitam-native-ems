@@ -1,7 +1,15 @@
 import Link from "next/link";
-import { ThemeToggle } from "@/components/theme-toggle"; // Might need a theme toggle or we just use the default dark mode switcher
+import { redirect } from "next/navigation";
+import { getServerSession } from "@/lib/auth/role";
+import { ThemeToggle } from "@/components/theme-toggle"; 
 
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+export default async function AuthLayout({ children }: { children: React.ReactNode }) {
+  const session = await getServerSession();
+
+  if (session) {
+    redirect("/dashboard");
+  }
+
   return (
     <div className="flex-grow flex flex-col bg-[#f0fdf4] dark:bg-[#141e14] selection:bg-primary selection:text-white min-h-screen relative overflow-hidden transition-colors duration-300">
       {/* Background Gradient */}
